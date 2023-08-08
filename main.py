@@ -7,79 +7,88 @@ import sys
 import datetime
 import random
 import json
+import logging
 
 
-# Fonction pour ouvrir le lien YouTube dans le navigateur par défaut
+# Function to open Youtube link in  the default browser
 def open_youtube_link(youtube_link):
+    time.sleep(2)
     webbrowser.open(youtube_link)
-    time.sleep(10)  # Attendre quelques secondes pour que la vidéo soit chargée
-    pyautogui.press(
-        "f"
-    )  # Simuler l'appui sur la touche "F" pour passer en mode plein écran
+    screensaver.debug(f"Link selected {youtube_link}")
+    time.sleep(10)  # Wait severeals secondes  to load the video
+    pyautogui.press("f")  # simulate pressing the "F" key to be in full screen
 
 
-# Définir le gestionnaire d'événements pour la touche ²
-def check_key_press():
-    if any(keyboard.is_pressed(key) for key in keys_to_detect):
-        pyautogui.press(
-            "esc"
-        )  # Simuler l'appui sur la touche "K" pour mettre en pause la vidéo
-        pyautogui.hotkey("ctrl", "w")
-        sys.exit(1)
-    root.after(100, check_key_press)  # Vérifier à nouveau après 100 ms
+# Function depends on the hour will select randomly link for the appropriate moment in the day
+def date_time():
+    actual_hour = datetime.datetime.now().time()
+    after_12_hour = (datetime.datetime.combine(datetime.date.today(), actual_hour) + datetime.timedelta(hours=12)).time()
+    screensaver.debug(f"h+12 : {after_12_hour}, h+0 : {actual_hour}")
 
-
-def date_time(liste_youtube_nuit: list, liste_youtube_jour: list):
-    heure_actuelle = datetime.datetime.now().time()
-    heure_apres_12h = (
-        datetime.datetime.combine(datetime.date.today(), heure_actuelle)
-        + datetime.timedelta(hours=12)
-    ).time()
-    if heure_apres_12h.hour > 7 & heure_apres_12h.hour < 18:
-        choix_random = random.choice(liste_youtube_nuit)
+    if 7 < after_12_hour.hour < 18:
+        choix_random = random.choice(youtube_list_night)
         return choix_random
     else:
-        if heure_actuelle.hour > 7:
-            choix_random = random.choice(liste_youtube_jour)
+        if actual_hour.hour > 7:
+            choix_random = random.choice(youtube_list_day)
             return choix_random
 
 
+# Check the press key if it's '+' get new video, if it's 'esc' close the windows
+def check_key_press():
+    pressed_keys = [key for key in keys_to_detect if keyboard.is_pressed(key)]
+    if pressed_keys:
+        screensaver.debug(f"Keys detected : {', '.join(pressed_keys)}")
+        if "plus" in pressed_keys:
+            screensaver.debug(f"plus detected")
+            pyautogui.press("esc")
+            pyautogui.hotkey("ctrl", "w")
+            get_cam()
+        else:
+            screensaver.debug(f"esc detected")
+            pyautogui.press("esc")
+            pyautogui.hotkey("ctrl", "w")
+            sys.exit(1)
+    root.after(10, check_key_press)
+
+
+def get_cam():
+    # Get the Youtube link compared with time it is
+    youtube_link = date_time()
+    # Open the YouTube link in the default browser
+    open_youtube_link(youtube_link)
+
+
 if __name__ == "__main__":
-    # Lien YouTube de la vidéo à afficher en écran de veille
-    # youtube_jour = "https://www.youtube.com/watch?v=dm64fxEmRus&ab_channel=CoralGardeners"
-    # youtube_nuit = "https://www.youtube.com/watch?v=AGri76vwuLc&ab_channel=Africam"
+    screensaver = logging.getLogger("ScreenSaver")
+    logging.basicConfig(
+        level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
+    )
 
     with open("link_day.json", "r") as json_file:
         json_data = json.load(json_file)
 
-    # Stocker la catégorie "youtube_nuit" dans la variable liste_youtube_nuit
-    liste_youtube_nuit = json_data["youtube_nuit"]
+    youtube_list_night = json_data["youtube_nuit"]
+    youtube_list_day = json_data["youtube_jour"]
 
-    # Stocker la catégorie "youtube_jour" dans la variable liste_youtube_jour
-    liste_youtube_jour = json_data["youtube_jour"]
-    # Création de la fenêtre principale
+    # Creation of the main window
     root = tk.Tk()
-    root.geometry("800x600")  # Définir la taille de la fenêtre
-
-    # Configuration de la fenêtre pour qu'elle soit en plein écran
+    root.geometry("800x600")  # Define the size of the window
+    # Configuration of the screen to be in full screen
     root.attributes("-fullscreen", True)
 
-    # Définir la liste de touches à détecter
-    keys_to_detect = ["²", "alt", "ctrl", "shift", "delete", "return", "escape"]
+    # Define a list of the detected keys
+    keys_to_detect = ["escape", "plus"]
 
-    # Bouton pour ouvrir le lien YouTube
-    button = tk.Button(root, text="Ouvrir YouTube", command=open_youtube_link)
+    # Button to open the YouTube link
+    button = tk.Button(root, text="Open YouTube", command=open_youtube_link)
     button.pack(pady=10)
 
-    # Determiner le lien à utiliser en fonction de l'heure
-    youtube_link = date_time(
-        liste_youtube_nuit=liste_youtube_nuit, liste_youtube_jour=liste_youtube_jour
-    )
-    # Ouvrir le lien YouTube dans le navigateur par défaut
-    open_youtube_link(youtube_link)
+    # Get live cam
+    get_cam()
 
-    # Démarrer la vérification de la touche ²
+    # Check the verification of keys pressed during the video running
     check_key_press()
 
-    # Démarrage de la boucle principale de l'application
+    # Start of the main loop of the application
     root.mainloop()

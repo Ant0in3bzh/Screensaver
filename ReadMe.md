@@ -15,3 +15,7 @@ Pour l'explication :
 <br>
 Pour la mise en veille du pc, éteindre l'écran avant la mise en veille, exemple :
 ![Image_explicative_mise_en_veille](image/mise_en_veille.PNG)
+
+## Si erreur de lancement:
+Selectionner dans le plannificateur dans l'action lancer le code avec le fichier .bat,
+"launch_main_w10.bat"<br>
